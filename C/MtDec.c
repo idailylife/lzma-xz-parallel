@@ -835,19 +835,24 @@ static WRes ThreadFunc2(CMtDecThread *t)
 #endif
 
 
-static THREAD_FUNC_RET_TYPE THREAD_FUNC_CALL_TYPE ThreadFunc1(void *pp)
+static THREAD_FUNC_RET_TYPE THREAD_FUNC_CALL_TYPE ThreadFunc1(void* pp)
 {
+  static int g_ok_stat = 0x0;
+  static int g_err_stat = 0x80004005;
   WRes res;
-
-  CMtDecThread *t = (CMtDecThread *)pp;
+  CMtDecThread *t = (CMtDecThread*)pp;
   CMtDec *p;
-
-  // fprintf(stdout, "\n%d = %p\n", t->index, &t);
 
   res = ThreadFunc2(t);
   p = t->mtDec;
-  if (res == 0)
+  if (res == 0) {
+#ifdef _WIN32
     return p->exitThreadWRes;
+#else
+    if (p->exitThreadWRes) { return &g_err_stat; }
+    else { return &g_ok_stat; }
+#endif
+  }
   {
     // it's unexpected situation for some threading function error
     if (p->exitThreadWRes == 0)
@@ -858,7 +863,11 @@ static THREAD_FUNC_RET_TYPE THREAD_FUNC_CALL_TYPE ThreadFunc1(void *pp)
     Event_Set(&p->threads[0].canWrite);
     MtProgress_SetError(&p->mtProgress, MY_SRes_HRESULT_FROM_WRes(res));
   }
-  return res;
+#ifdef _WIN32
+    return res;
+#else
+    return &g_err_stat;
+#endif
 }
 
 static MY_NO_INLINE THREAD_FUNC_RET_TYPE THREAD_FUNC_CALL_TYPE ThreadFunc(void *pp)

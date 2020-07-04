@@ -45,6 +45,11 @@
 #include "SbDec.h"
 #endif
 
+#ifndef _WIN32
+#define S_OK 0x00000000
+#define E_FAIL 0x80004005
+#endif
+
 #include "Xz.h"
 
 #define XZ_CHECK_SIZE_MAX 64
